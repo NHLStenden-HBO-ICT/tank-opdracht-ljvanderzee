@@ -14,7 +14,7 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 114757; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 408832; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -367,7 +367,7 @@ void Game::draw()
 
         const int begin = ((t < 1) ? 0 : num_tanks_blue);
         std::vector<const Tank*> sorted_tanks;
-        insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
+        counting_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
         sorted_tanks.erase(std::remove_if(sorted_tanks.begin(), sorted_tanks.end(), [](const Tank* tank) { return !tank->active; }), sorted_tanks.end());
 
         draw_health_bars(sorted_tanks, t);
@@ -375,36 +375,83 @@ void Game::draw()
 }
 
 // -----------------------------------------------------------
-// Sort tanks by health value using insertion sort
+// Sort tanks by health value using counting sort
 // -----------------------------------------------------------
-void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
+void Tmpl8::Game::counting_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
 {
     const int NUM_TANKS = end - begin;
-    sorted_tanks.reserve(NUM_TANKS);
-    sorted_tanks.emplace_back(&original.at(begin));
+    int max = 0;
+    sorted_tanks.resize(NUM_TANKS);
 
-    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
+    //Find the tank with the highest amount of health and assign that value to max
+    for (int i = begin; i < (begin + NUM_TANKS); i++)
+    {
+        const Tank& current_tank = original.at(i);
+        if (current_tank.get_health() > max)
+        {
+            max = current_tank.get_health();
+        }
+    }
+
+    // Max value is used to initialize a count vector with all zeros
+    std::vector<int> count(max + 1);
+    
+    //Loop through the current tank vector (red or blue) and increase the count of the count vector at the index of the current tank health
+    for (int i = begin; i < (begin + NUM_TANKS); i++)
     {
         const Tank& current_tank = original.at(i);
 
-        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
-        {
-            const Tank* current_checking_tank = sorted_tanks.at(s);
+        count.at(current_tank.get_health())++;
+    }
 
-            if ((current_checking_tank->compare_health(current_tank) <= 0))
-            {
-                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
-                break;
-            }
+    //Store the cummulative count in the count array
+    for (int i = 1; i < count.size(); i++)
+    {
+        count.at(i) += count.at(i - 1);
+    }
 
-            if (s == 0)
-            {
-                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
-                break;
-            }
-        }
+    for (int i = (begin + NUM_TANKS -1); i >= begin; i--)
+    {
+        const Tank& current_tank = original.at(i);
+
+        int countIndex = count.at(current_tank.get_health());
+
+        sorted_tanks.at(countIndex - 1) = &current_tank;
+
+        count.at(current_tank.get_health())--;
+
     }
 }
+
+//ORIGINAL INSERTION SORT
+//void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
+//{
+//    const int NUM_TANKS = end - begin;
+//    sorted_tanks.reserve(NUM_TANKS);
+//    sorted_tanks.emplace_back(&original.at(begin));
+//
+//    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
+//    {
+//        const Tank& current_tank = original.at(i);
+//
+//        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
+//        {
+//            const Tank* current_checking_tank = sorted_tanks.at(s);
+//
+//            if ((current_checking_tank->compare_health(current_tank) <= 0))
+//            {
+//                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
+//                break;
+//            }
+//
+//            if (s == 0)
+//            {
+//                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
+//                break;
+//            }
+//        }
+//    }
+//}
 
 // -----------------------------------------------------------
 // Draw the health bars based on the given tanks health values
