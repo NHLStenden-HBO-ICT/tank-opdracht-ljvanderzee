@@ -123,6 +123,11 @@ int Tank::compare_health(const Tank& other) const
     return ((health == other.health) ? 0 : ((health > other.health) ? 1 : -1));
 }
 
+int Tank::get_health() const
+{
+    return ((health >= 0) ? health : 0);
+}
+
 //Add some force in a given direction
 void Tank::push(vec2 direction, float magnitude)
 {
