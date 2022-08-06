@@ -13,6 +13,9 @@ constexpr auto health_bar_width = 70;
 
 constexpr auto max_frames = 2000;
 
+//Cell size for the spatial partitioning grid
+constexpr auto cell_size = 10;
+
 //Global performance timer
 constexpr auto REF_PERFORMANCE = 408832; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
@@ -62,17 +65,22 @@ void Game::init()
 
     float spacing = 7.5f;
 
+    //Init grid for spatial partitioning
+    gamegrid = make_unique<Grid>((SCRWIDTH - (HEALTHBAR_OFFSET *2)), SCRHEIGHT, cell_size);
+
     //Spawn blue tanks
     for (int i = 0; i < num_tanks_blue; i++)
     {
         vec2 position{ start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing) };
         tanks.push_back(Tank(position.x, position.y, BLUE, &tank_blue, &smoke, 1100.f, position.y + 16, tank_radius, tank_max_health, tank_max_speed));
+        gamegrid->addTank(&tanks.back());
     }
     //Spawn red tanks
     for (int i = 0; i < num_tanks_red; i++)
     {
         vec2 position{ start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing) };
         tanks.push_back(Tank(position.x, position.y, RED, &tank_red, &smoke, 100.f, position.y + 16, tank_radius, tank_max_health, tank_max_speed));
+        gamegrid->addTank(&tanks.back());
     }
 
     particle_beams.push_back(Particle_beam(vec2(590, 327), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
@@ -117,6 +125,24 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
+void Game::tankCollision(Tank* tank, vector<Tank*>& tanksToCheck, int index)
+{
+    for (int i = index; i < tanksToCheck.size(); i++)
+    {
+        //Original collision detection code
+        vec2 dir = tank->get_position() - tanksToCheck[i]->get_position();
+        float dir_squared_len = dir.sqr_length();
+
+        float col_squared_len = (tank->get_collision_radius() + tanksToCheck[i]->get_collision_radius());
+        col_squared_len *= col_squared_len;
+
+        if (dir_squared_len < col_squared_len)
+        {
+            tank->push(dir.normalized(), 1.f);
+        }
+    }
+};
+
 // -----------------------------------------------------------
 // Update the game state:
 // Move all objects
@@ -136,8 +162,48 @@ void Game::update(float deltaTime)
         }
     }
 
+    //Loops through the cells in the gamegrid and checks the tanks in that cell for collision
+    //Also check the neigbouring cells (Top, Top-Left, Left, Bottom-Left) of the current cell
+    for (int i = 0; i < gamegrid->cells.size(); i++)
+    {
+        int x = i % gamegrid->xCells;
+        int y = i / gamegrid->xCells;
+
+        Cell& cell = gamegrid->cells[i];
+
+        //Loop through the tanks in the current cell
+        for (int j = 0; j < cell.tanks.size(); j++)
+        {
+            Tank* tank = cell.tanks[j];
+            if (tank->active)
+            {
+                tankCollision(tank, cell.tanks, j + 1);
+            }
+            if (x > 0)
+            {
+                //Left cell
+                tankCollision(tank, gamegrid->getCell(x - 1, y)->tanks, 0);
+                if (y > 0)
+                {
+                    //Top left cell
+                    tankCollision(tank, gamegrid->getCell(x - 1, y - 1)->tanks, 0);
+                }
+                if (y < gamegrid->yCells -1)
+                {
+                    //Bottom lef cell
+                    tankCollision(tank, gamegrid->getCell(x - 1, y + 1)->tanks, 0);
+                }
+            }
+            //Top cell
+            if (y > 0)
+            {
+                tankCollision(tank, gamegrid->getCell(x, y - 1)->tanks, 0);
+            }
+        }
+    }
+
     //Check tank collision and nudge tanks away from each other
-    for (Tank& tank : tanks)
+    /*for (Tank& tank : tanks)
     {
         if (tank.active)
         {
@@ -157,7 +223,7 @@ void Game::update(float deltaTime)
                 }
             }
         }
-    }
+    }*/
 
     //Update tanks
     for (Tank& tank : tanks)
@@ -166,6 +232,15 @@ void Game::update(float deltaTime)
         {
             //Move tanks according to speed and nudges (see above) also reload
             tank.tick(background_terrain);
+
+            //Check if the current cell on the grid has changed and if so move to new cell
+            Cell* checkCell = gamegrid->getCell(tank.position);
+            if (checkCell != tank.currentCell)
+            {
+                //Move the tank to checkCell
+                gamegrid->removeTankFromCell(&tank);
+                gamegrid->addTank(&tank, checkCell);
+            }
 
             //Shoot at closest target if reloaded
             if (tank.rocket_reloaded())

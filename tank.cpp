@@ -30,6 +30,7 @@ Tank::Tank(
       tank_sprite(tank_sprite),
       smoke_sprite(smoke_sprite)
 {
+    
 }
 
 Tank::~Tank()

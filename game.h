@@ -7,6 +7,7 @@ class Tank;
 class Rocket;
 class Smoke;
 class Particle_beam;
+class Grid;
 
 class Game
 {
@@ -17,7 +18,7 @@ class Game
     void update(float deltaTime);
     void draw();
     void tick(float deltaTime);
-    void insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end);
+    //void insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end);
     void counting_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end);
     void draw_health_bars(const std::vector<const Tank*>& sorted_tanks, const int team);
     void measure_performance();
@@ -47,6 +48,8 @@ class Game
   private:
     Surface* screen;
 
+    unique_ptr<Grid> gamegrid;
+
     vector<Tank> tanks;
     vector<Rocket> rockets;
     vector<Smoke> smokes;
@@ -63,6 +66,8 @@ class Game
 
     //Checks if a point lies on the left of an arbitrary angled line
     bool left_of_line(vec2 line_start, vec2 line_end, vec2 point);
+
+    void tankCollision(Tank* tank, vector<Tank*>& tanksToCheck, int index);
 };
 
 }; // namespace Tmpl8
