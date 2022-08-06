@@ -17,7 +17,7 @@ constexpr auto max_frames = 2000;
 constexpr auto cell_size = 10;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 408832; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 136616; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
