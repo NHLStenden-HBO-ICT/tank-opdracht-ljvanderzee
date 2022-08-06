@@ -8,7 +8,7 @@ namespace Tmpl8
 		height(height),
 		cellSize(cellSize) 
 	{
-		//Casting to a float and using ceil to round up and make sure we have enough cells
+		//Casting to a float and using ceil to round up and make there are enough cells
 		xCells = ceil((float)width / cellSize);
 		yCells = ceil((float)height / cellSize);
 
