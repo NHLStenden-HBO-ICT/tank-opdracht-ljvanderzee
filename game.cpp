@@ -14,10 +14,10 @@ constexpr auto health_bar_width = 70;
 constexpr auto max_frames = 2000;
 
 //Cell size for the spatial partitioning grid
-constexpr auto cell_size = 10;
+constexpr auto cell_size = 12;
 
 //Global performance timer
-constexpr auto REF_PERFORMANCE = 136616; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+constexpr auto REF_PERFORMANCE = 138835; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -125,11 +125,11 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
+//This function contains the original collision detection code
 void Game::tankCollision(Tank* tank, vector<Tank*>& tanksToCheck, int index)
 {
     for (int i = index; i < tanksToCheck.size(); i++)
     {
-        //Original collision detection code
         vec2 dir = tank->get_position() - tanksToCheck[i]->get_position();
         float dir_squared_len = dir.sqr_length();
 
@@ -142,6 +142,43 @@ void Game::tankCollision(Tank* tank, vector<Tank*>& tanksToCheck, int index)
         }
     }
 };
+
+void Game::convexHull(const vector<Tank>& tanks)
+{
+    vector<Tank*> activeTanks = findActiveTanks(tanks);
+
+    //Find lowestLeftTank as a starting point.
+    vec2 lowestLeftTank = activeTanks[0]->position;
+
+    for (int i = 1; i < activeTanks.size() - 1; i++)
+    {
+        if (activeTanks[i]->position.y < lowestLeftTank.y)
+        {
+            lowestLeftTank = activeTanks[i]->position;
+            continue;
+        }
+        if (activeTanks[i]->position.y == lowestLeftTank.y && activeTanks[i]->position.x < lowestLeftTank.x)
+        {
+            lowestLeftTank = activeTanks[i]->position;
+        }
+    }
+
+    
+};
+
+vector<Tank*> Game::findActiveTanks(const vector<Tank>& tanks)
+{
+    vector<Tank*> activeTanks;
+    for (Tank tank : tanks)
+    {
+        if (tank.active)
+        {
+            activeTanks.push_back(&tank);
+        }
+    }
+    return activeTanks;
+};
+
 
 // -----------------------------------------------------------
 // Update the game state:
@@ -164,6 +201,8 @@ void Game::update(float deltaTime)
 
     //Loops through the cells in the gamegrid and checks the tanks in that cell for collision
     //Also check the neigbouring cells (Top, Top-Left, Left, Bottom-Left) of the current cell
+    //This patterns ensures that cells are not checked against eachother more than once
+    //Replaces the original code which was n*n with a grid based implementation which runs in O(n * m)
     for (int i = 0; i < gamegrid->cells.size(); i++)
     {
         int x = i % gamegrid->xCells;
@@ -177,27 +216,28 @@ void Game::update(float deltaTime)
             Tank* tank = cell.tanks[j];
             if (tank->active)
             {
+                //Check the tanks in the own cell for collision
                 tankCollision(tank, cell.tanks, j + 1);
-            }
-            if (x > 0)
-            {
-                //Left cell
-                tankCollision(tank, gamegrid->getCell(x - 1, y)->tanks, 0);
+                if (x > 0)
+                {
+                    //Left cell
+                    tankCollision(tank, gamegrid->getCell(x - 1, y)->tanks, 0);
+                    if (y > 0)
+                    {
+                        //Top left cell
+                        tankCollision(tank, gamegrid->getCell(x - 1, y - 1)->tanks, 0);
+                    }
+                    if (y < gamegrid->yCells - 1)
+                    {
+                        //Bottom lef cell
+                        tankCollision(tank, gamegrid->getCell(x - 1, y + 1)->tanks, 0);
+                    }
+                }
+                //Top cell
                 if (y > 0)
                 {
-                    //Top left cell
-                    tankCollision(tank, gamegrid->getCell(x - 1, y - 1)->tanks, 0);
+                    tankCollision(tank, gamegrid->getCell(x, y - 1)->tanks, 0);
                 }
-                if (y < gamegrid->yCells -1)
-                {
-                    //Bottom lef cell
-                    tankCollision(tank, gamegrid->getCell(x - 1, y + 1)->tanks, 0);
-                }
-            }
-            //Top cell
-            if (y > 0)
-            {
-                tankCollision(tank, gamegrid->getCell(x, y - 1)->tanks, 0);
             }
         }
     }
@@ -210,8 +250,9 @@ void Game::update(float deltaTime)
             //Move tanks according to speed and nudges (see above) also reload
             tank.tick(background_terrain);
 
-            //Check if the current cell on the grid has changed and if so move to new cell
+            //Get and store the cell of the current tank in checkCell
             Cell* checkCell = gamegrid->getCell(tank.position);
+            //If checkCell does not match the cell the tank is currently in
             if (checkCell != tank.currentCell)
             {
                 //Move the tank to checkCell
@@ -240,6 +281,9 @@ void Game::update(float deltaTime)
     //Calculate "forcefield" around active tanks
     forcefield_hull.clear();
 
+    convexHull(tanks);
+
+    //Original convex hull calculation code
     //Find first active tank (this loop is a bit disgusting, fix?)
     int first_active = 0;
     for (Tank& tank : tanks)
@@ -264,7 +308,7 @@ void Game::update(float deltaTime)
     }
 
     //Calculate convex hull for 'rocket barrier'
-    for (Tank& tank : tanks)
+    for (Tank& tank : tanks)    
     {
         if (tank.active)
         {
@@ -428,6 +472,9 @@ void Game::draw()
 
 // -----------------------------------------------------------
 // Sort tanks by health value using counting sort
+// Replaces the original insertion sort function with a counting sort
+// The original code had a worst case O(n*n)
+// Counting sort has a worst case O(n+k)
 // -----------------------------------------------------------
 void Tmpl8::Game::counting_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
 {
@@ -462,6 +509,7 @@ void Tmpl8::Game::counting_sort_tanks_health(const std::vector<Tank>& original, 
         count.at(i) += count.at(i - 1);
     }
 
+    //Loop over the tanks in the original vector and place them in the right position in the sorted_tanks vector
     for (int i = (begin + NUM_TANKS -1); i >= begin; i--)
     {
         const Tank& current_tank = original.at(i);
@@ -474,36 +522,6 @@ void Tmpl8::Game::counting_sort_tanks_health(const std::vector<Tank>& original, 
 
     }
 }
-
-//ORIGINAL INSERTION SORT
-//void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end)
-//{
-//    const int NUM_TANKS = end - begin;
-//    sorted_tanks.reserve(NUM_TANKS);
-//    sorted_tanks.emplace_back(&original.at(begin));
-//
-//    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
-//    {
-//        const Tank& current_tank = original.at(i);
-//
-//        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
-//        {
-//            const Tank* current_checking_tank = sorted_tanks.at(s);
-//
-//            if ((current_checking_tank->compare_health(current_tank) <= 0))
-//            {
-//                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
-//                break;
-//            }
-//
-//            if (s == 0)
-//            {
-//                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
-//                break;
-//            }
-//        }
-//    }
-//}
 
 // -----------------------------------------------------------
 // Draw the health bars based on the given tanks health values

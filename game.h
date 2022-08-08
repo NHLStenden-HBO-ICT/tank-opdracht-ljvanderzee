@@ -68,6 +68,10 @@ class Game
     bool left_of_line(vec2 line_start, vec2 line_end, vec2 point);
 
     void tankCollision(Tank* tank, vector<Tank*>& tanksToCheck, int index);
+
+    void convexHull(const vector<Tank>& tank);
+
+    vector<Tank*> findActiveTanks(const vector<Tank>& tank);
 };
 
 }; // namespace Tmpl8
