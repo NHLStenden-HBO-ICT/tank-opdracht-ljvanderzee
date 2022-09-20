@@ -92,6 +92,7 @@ using namespace Tmpl8;
 
 #include "game.h"
 #include "grid.h"
+#include "convexHull.h"
 
 
 // clang-format on

@@ -22,6 +22,7 @@ class Game
     void counting_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end);
     void draw_health_bars(const std::vector<const Tank*>& sorted_tanks, const int team);
     void measure_performance();
+    void getActiveTanksPositions(const vector<Tank>& tank);
 
     Tank& find_closest_enemy(Tank& current_tank);
 
@@ -44,6 +45,14 @@ class Game
     void key_down(int key)
     { /* implement if you want to handle keys */
     }
+
+    //CONVEXHULL TEST FUNCTIONS
+    vector<vec2> convexHullTest(vector<vec2>& activeTanksPositions);
+    void heapSort(vector<vec2>& activeTanksPositions, int sizeOfVector, vec2 origin);
+    void minHeapify(vector<vec2>& tanks, int index, int sizeOfVector, vec2 origin);
+    void maxHeapify(vector<vec2>& tanks, int index, int sizeOfVector, vec2 origin);
+    bool compareAngles(vec2 p0, vec2 p1, vec2 p2);
+    int convex(const vec2& p0, const vec2& p1, const vec2& p2);
 
   private:
     Surface* screen;
@@ -68,10 +77,6 @@ class Game
     bool left_of_line(vec2 line_start, vec2 line_end, vec2 point);
 
     void tankCollision(Tank* tank, vector<Tank*>& tanksToCheck, int index);
-
-    void convexHull(const vector<Tank>& tank);
-
-    vector<Tank*> findActiveTanks(const vector<Tank>& tank);
 };
 
 }; // namespace Tmpl8

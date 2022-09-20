@@ -15,6 +15,7 @@
     <ClCompile Include="tank.cpp" />
     <ClCompile Include="terrain.cpp" />
     <ClCompile Include="grid.cpp" />
+    <ClCompile Include="convexHull.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -33,6 +34,7 @@
     <ClInclude Include="thread_pool.h" />
     <ClInclude Include="terrain.h" />
     <ClInclude Include="grid.h" />
+    <ClInclude Include="convexHull.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">
