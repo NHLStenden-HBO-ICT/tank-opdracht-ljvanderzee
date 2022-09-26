@@ -119,7 +119,7 @@
   </ItemDefinitionGroup>
   <!-- END Custom section -->
   <ItemGroup>
-    <ClCompile Include="convexHull.cpp" />
+    <ClCompile Include="convexhull.cpp" />
     <ClCompile Include="explosion.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="grid.cpp" />
@@ -134,7 +134,7 @@
     <ClCompile Include="terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="convexHull.h" />
+    <ClInclude Include="convexhull.h" />
     <ClInclude Include="explosion.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="grid.h" />
