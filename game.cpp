@@ -73,6 +73,7 @@ void Game::init()
     {
         vec2 position{ start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing) };
         tanks.push_back(Tank(position.x, position.y, BLUE, &tank_blue, &smoke, 1100.f, position.y + 16, tank_radius, tank_max_health, tank_max_speed));
+        //Adds blue tanks to their starting cells on the grid
         gamegrid->addTank(&tanks.back());
     }
     //Spawn red tanks
@@ -80,6 +81,7 @@ void Game::init()
     {
         vec2 position{ start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing) };
         tanks.push_back(Tank(position.x, position.y, RED, &tank_red, &smoke, 100.f, position.y + 16, tank_radius, tank_max_health, tank_max_speed));
+        //Adds red tanks to their starting cells on the grid
         gamegrid->addTank(&tanks.back());
     }
 
@@ -449,7 +451,6 @@ void Tmpl8::Game::counting_sort_tanks_health(const std::vector<Tank>& original, 
         count.at(current_tank.get_health())--;
 
     }
-    //return count instead of tank vector
 }
 
 // -----------------------------------------------------------

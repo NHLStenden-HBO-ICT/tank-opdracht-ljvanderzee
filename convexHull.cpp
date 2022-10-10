@@ -10,7 +10,7 @@ namespace Tmpl8
 
         for (int i = 1; i < activeTanksPositions.size() - 1; i++)
         {
-            if (activeTanksPositions[i].y < activeTanksPositions[0].y)
+            if (activeTanksPositions[i].y > activeTanksPositions[0].y)
             {
                 swap(activeTanksPositions[0], activeTanksPositions[i]);
                 continue;
@@ -76,7 +76,7 @@ namespace Tmpl8
         vec2 a = st[st.size() - 2];
         vec2 b = st[st.size() - 1];
         vec2 c = st[0];
-        if (convex(a, b, c) > 0) {
+        if (convex(a, b, c) == 0) {
             st.pop_back();
         }
 
@@ -150,8 +150,10 @@ namespace Tmpl8
 
         if (crossProduct == 0)
         {
+            //Points or collinear
             return 0;
         }
+        //returns 1 for a counter-clockwise turn and -1 for a clockwise turn
         return (crossProduct > 0) ? 1 : -1;
     };
 
